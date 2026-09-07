@@ -4,6 +4,7 @@
 name: CI Scripts Tests
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - '.github/dependabot.yml'
@@ -64,6 +65,9 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
+  issues: read
 
 jobs:
   python-script-tests:
@@ -79,3 +83,17 @@ jobs:
       - name: Run JUnit summary action unit tests
         working-directory: .github/actions/junit-summary
         run: python3 -m unittest discover -v -p '*_test.py'
+      - name: Exercise verifier with live upstream API data (read only)
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const {verifyExpectedWorkflows, loadLocalInventory} = require('./.github/resources/scripts/ci_expected_workflows');
+            const {freshAfter} = require('./.github/resources/scripts/ci_passed');
+            const repo = {owner: 'kubeflow', repo: 'pipelines'};
+            const {data: pullRequest} = await github.rest.pulls.get({...repo, pull_number: 14111});
+            const result = await verifyExpectedWorkflows({github, ...repo, pullRequest,
+              ...loadLocalInventory(process.env.GITHUB_WORKSPACE),
+              freshAfter: await freshAfter(github, {repo}, pullRequest)});
+            core.info(JSON.stringify({sha: pullRequest.head.sha, ...result}, null, 2));
+            await core.summary.addHeading('Read-only live API verification')
+              .addCodeBlock(JSON.stringify({sha: pullRequest.head.sha, ...result}, null, 2)).write();

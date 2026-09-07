@@ -78,7 +78,7 @@
     {
       "path": ".github/workflows/ci-scripts-tests.yml",
       "name": "CI Scripts Tests",
-      "header_sha256": "d4b9f0f5c0b068d2c36f33b0ebfb003872ff361426647cac16739d40a85de214",
+      "header_sha256": "93dfbcf53d0e0fe13d7170fef9aeb422211e90aaa2c399de1c13fe640c3ef000",
       "pull_request": {
         "paths": [
           ".github/dependabot.yml",
