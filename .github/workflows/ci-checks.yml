@@ -2,6 +2,7 @@
 name: CI Check
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '7,22,37,52 * * * *'
   pull_request_target:
@@ -78,6 +79,7 @@ jobs:
         candidate: ${{ fromJSON(needs.recovery_candidates.outputs.candidates || '[{"number":0,"head":""}]') }}
     if: >-
       always() && !cancelled() && (
+      github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'schedule' && needs.recovery_candidates.result == 'success' && needs.recovery_candidates.outputs.candidates != '[]') ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request') ||
       (github.event_name == 'pull_request_target' &&
@@ -151,3 +153,12 @@ jobs:
               head: process.env.CI_HEAD_SHA,
               before: process.env.CI_PR_SNAPSHOT,
               pollPassed: process.env.CI_POLL_PASSED === 'true'});
+
+      - name: Assert dispatch exercised the writer without publishing
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          PR_NUMBER: ${{ steps.prepare.outputs.pr_number }}
+        run: |
+          test "$PREPARE_OUTCOME" = success
+          test -z "$PR_NUMBER"
